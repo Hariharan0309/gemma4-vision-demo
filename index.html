@@ -3,57 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemma 4 Vision</title>
+  <title>Gemma 4 Vision Agent</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f0f11;
-      color: #e8e8ea;
+      background: #0a0a0d;
+      color: #e2e2e6;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem 1rem;
+      padding: 2rem 1rem 4rem;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 2.5rem;
-    }
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 2.5rem; }
 
     header h1 {
-      font-size: 1.9rem;
+      font-size: 2rem;
       font-weight: 700;
       letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #8b7cf8, #c084fc);
+      background: linear-gradient(135deg, #818cf8, #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    header p {
-      color: #6b6b78;
-      font-size: 0.9rem;
-      margin-top: 0.4rem;
+    header p { color: #52525b; font-size: 0.875rem; margin-top: 0.4rem; }
+
+    /* ── Pipeline badge ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      font-size: 0.8rem;
+      color: #52525b;
     }
 
-    .card {
+    .pipe-node {
       background: #18181b;
       border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      font-weight: 600;
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    .pipe-node.active  { border-color: #818cf8; color: #818cf8; }
+    .pipe-node.done    { border-color: #34d399; color: #34d399; }
+    .pipe-arrow        { color: #3f3f46; }
+
+    /* ── Main card ── */
+    .card {
+      background: #111114;
+      border: 1px solid #1f1f23;
       border-radius: 16px;
-      padding: 2rem;
+      padding: 1.75rem;
       width: 100%;
-      max-width: 680px;
+      max-width: 760px;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
 
-    /* Drop zone */
+    /* ── Drop zone ── */
     .drop-zone {
-      border: 2px dashed #3f3f46;
+      border: 2px dashed #2d2d32;
       border-radius: 12px;
       padding: 2.5rem 1rem;
       text-align: center;
@@ -62,189 +80,175 @@
       position: relative;
     }
 
-    .drop-zone.drag-over {
-      border-color: #8b7cf8;
-      background: #1e1b2e;
-    }
+    .drop-zone.drag-over { border-color: #818cf8; background: #13121e; }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .drop-zone .icon { font-size: 2.5rem; margin-bottom: 0.6rem; line-height: 1; }
+    .drop-zone p { color: #52525b; font-size: 0.875rem; }
+    .drop-zone p strong { color: #818cf8; }
 
-    .drop-zone input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    .drop-zone .icon {
-      font-size: 2.5rem;
-      margin-bottom: 0.75rem;
-      line-height: 1;
-    }
-
-    .drop-zone p {
-      color: #71717a;
-      font-size: 0.875rem;
-    }
-
-    .drop-zone p strong {
-      color: #a78bfa;
-    }
-
-    /* Preview */
-    #preview-wrap {
-      display: none;
-      position: relative;
-    }
+    /* ── Preview ── */
+    #preview-wrap { display: none; position: relative; }
 
     #preview-wrap img {
       width: 100%;
-      max-height: 320px;
+      max-height: 340px;
       object-fit: contain;
       border-radius: 10px;
-      border: 1px solid #27272a;
-      background: #09090b;
+      border: 1px solid #1f1f23;
+      background: #08080b;
     }
 
     #clear-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #27272a;
-      border: none;
-      color: #a1a1aa;
-      font-size: 1rem;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: absolute; top: 8px; right: 8px;
+      background: #27272a; border: none; color: #a1a1aa;
+      font-size: 1rem; width: 28px; height: 28px;
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
       transition: background 0.15s;
     }
 
     #clear-btn:hover { background: #3f3f46; color: #e4e4e7; }
 
-    /* Question */
-    .question-row {
-      display: flex;
-      gap: 0.75rem;
-    }
+    /* ── Question ── */
+    .question-row { display: flex; gap: 0.75rem; }
 
     #question {
-      flex: 1;
-      background: #09090b;
-      border: 1px solid #3f3f46;
-      border-radius: 10px;
-      color: #e8e8ea;
-      font-size: 0.925rem;
-      padding: 0.75rem 1rem;
-      resize: none;
-      height: 56px;
-      line-height: 1.5;
+      flex: 1; background: #08080b;
+      border: 1px solid #2d2d32; border-radius: 10px;
+      color: #e2e2e6; font-size: 0.925rem;
+      padding: 0.75rem 1rem; resize: none; height: 56px;
+      line-height: 1.5; font-family: inherit;
       transition: border-color 0.2s;
-      font-family: inherit;
     }
 
-    #question:focus {
-      outline: none;
-      border-color: #7c3aed;
-    }
-
-    #question::placeholder { color: #52525b; }
+    #question:focus { outline: none; border-color: #6d28d9; }
+    #question::placeholder { color: #3f3f46; }
 
     #submit-btn {
-      background: linear-gradient(135deg, #7c3aed, #a855f7);
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 0 1.4rem;
-      cursor: pointer;
+      background: linear-gradient(135deg, #6d28d9, #9333ea);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: 0.9rem; font-weight: 600;
+      padding: 0 1.4rem; cursor: pointer;
       transition: opacity 0.2s, transform 0.1s;
-      white-space: nowrap;
-      font-family: inherit;
+      white-space: nowrap; font-family: inherit;
     }
 
     #submit-btn:hover:not(:disabled) { opacity: 0.9; }
     #submit-btn:active:not(:disabled) { transform: scale(0.97); }
-    #submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* Answer */
-    #answer-wrap {
+    /* ── Agent output panels ── */
+    .agents-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .agent-panel {
+      background: #08080b;
+      border: 1px solid #1f1f23;
+      border-radius: 12px;
+      overflow: hidden;
       display: none;
     }
 
-    #answer-wrap label {
+    .agent-panel.visible { display: block; }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #1f1f23;
+      background: #0e0e12;
+    }
+
+    .agent-icon { font-size: 1rem; line-height: 1; }
+
+    .agent-name {
       font-size: 0.78rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+    }
+
+    .agent-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      font-weight: 600;
+      background: #1f1f23;
       color: #52525b;
-      display: block;
-      margin-bottom: 0.5rem;
     }
 
-    #answer {
-      background: #09090b;
-      border: 1px solid #27272a;
-      border-radius: 10px;
+    .agent-badge.running { background: #1e1b38; color: #818cf8; }
+    .agent-badge.done    { background: #052e16; color: #34d399; }
+
+    .agent-body {
       padding: 1rem 1.1rem;
-      font-size: 0.925rem;
-      line-height: 1.75;
-      color: #d4d4d8;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: #a1a1aa;
       white-space: pre-wrap;
-      min-height: 80px;
+      min-height: 60px;
     }
 
-    /* Status */
+    /* VisionAnalyzer uses a slightly different tint */
+    .agent-panel[data-agent="VisionAnalyzer"] .agent-name { color: #818cf8; }
+    .agent-panel[data-agent="ExplainerSuggester"] .agent-name { color: #c084fc; }
+
+    /* ── Status bar ── */
     #status {
       font-size: 0.8rem;
-      color: #6b6b78;
+      color: #3f3f46;
       text-align: center;
       min-height: 1.2em;
     }
 
     .spinner {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid #3f3f46;
-      border-top-color: #8b7cf8;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
+      display: inline-block; width: 11px; height: 11px;
+      border: 2px solid #2d2d32; border-top-color: #818cf8;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 5px;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Footer ── */
     footer {
-      margin-top: 2rem;
-      font-size: 0.78rem;
-      color: #3f3f46;
+      margin-top: 2.5rem;
+      font-size: 0.75rem;
+      color: #27272a;
       text-align: center;
     }
 
-    footer a { color: #6d28d9; text-decoration: none; }
+    footer a { color: #4c1d95; text-decoration: none; }
     footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Gemma 4 Vision</h1>
-  <p>Upload an image, ask a question, get an answer — fully open source.</p>
+  <h1>Gemma 4 Vision Agent</h1>
+  <p>Drop a screenshot — the agent pipeline explains what it sees and suggests next steps.</p>
 </header>
+
+<!-- Pipeline status -->
+<div class="pipeline">
+  <div class="pipe-node" id="node-vision">Vision Analyzer</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-node" id="node-explain">Explainer &amp; Suggester</div>
+</div>
 
 <div class="card">
 
-  <!-- Drop zone / file picker -->
+  <!-- Drop zone -->
   <div class="drop-zone" id="drop-zone">
     <input type="file" id="file-input" accept="image/*" />
     <div class="icon">🖼️</div>
     <p><strong>Click to upload</strong> or drag &amp; drop</p>
-    <p>PNG, JPG, WEBP, GIF — any image</p>
+    <p>PNG · JPG · WEBP · any screenshot</p>
   </div>
 
   <!-- Preview -->
@@ -257,24 +261,42 @@
   <div class="question-row">
     <textarea
       id="question"
-      placeholder="What does this image show? Explain it to a beginner."
+      placeholder="What should the agent look for? (or leave blank for a full analysis)"
     ></textarea>
-    <button id="submit-btn" disabled>Ask</button>
+    <button id="submit-btn" disabled>Analyze</button>
   </div>
 
   <!-- Status -->
   <div id="status"></div>
 
-  <!-- Answer -->
-  <div id="answer-wrap">
-    <label>Answer</label>
-    <div id="answer"></div>
+  <!-- Agent output panels -->
+  <div class="agents-grid" id="agents-grid">
+
+    <div class="agent-panel" id="panel-VisionAnalyzer" data-agent="VisionAnalyzer">
+      <div class="agent-header">
+        <span class="agent-icon">👁️</span>
+        <span class="agent-name">Vision Analyzer</span>
+        <span class="agent-badge" id="badge-VisionAnalyzer">waiting</span>
+      </div>
+      <div class="agent-body" id="body-VisionAnalyzer"></div>
+    </div>
+
+    <div class="agent-panel" id="panel-ExplainerSuggester" data-agent="ExplainerSuggester">
+      <div class="agent-header">
+        <span class="agent-icon">💡</span>
+        <span class="agent-name">Explainer &amp; Suggester</span>
+        <span class="agent-badge" id="badge-ExplainerSuggester">waiting</span>
+      </div>
+      <div class="agent-body" id="body-ExplainerSuggester"></div>
+    </div>
+
   </div>
 
 </div>
 
 <footer>
-  Powered by <a href="https://ollama.com" target="_blank">Ollama</a> &amp;
+  Powered by <a href="https://ollama.com" target="_blank">Ollama</a>,
+  <a href="https://google.github.io/adk-docs" target="_blank">Google ADK</a> &amp;
   <a href="https://ai.google.dev/gemma" target="_blank">Gemma 4</a> — Apache 2.0
 </footer>
 
@@ -284,19 +306,22 @@
   const previewWrap= document.getElementById('preview-wrap');
   const preview    = document.getElementById('preview');
   const clearBtn   = document.getElementById('clear-btn');
-  const question   = document.getElementById('question');
+  const questionEl = document.getElementById('question');
   const submitBtn  = document.getElementById('submit-btn');
-  const status     = document.getElementById('status');
-  const answerWrap = document.getElementById('answer-wrap');
-  const answer     = document.getElementById('answer');
+  const statusEl   = document.getElementById('status');
+  const nodeVision = document.getElementById('node-vision');
+  const nodeExplain= document.getElementById('node-explain');
+
+  const AGENTS = ['VisionAnalyzer', 'ExplainerSuggester'];
 
   let selectedFile = null;
+
+  // ── File handling ─────────────────────────────────────────────────────────
 
   function setFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
     selectedFile = file;
-    const url = URL.createObjectURL(file);
-    preview.src = url;
+    preview.src = URL.createObjectURL(file);
     dropZone.style.display = 'none';
     previewWrap.style.display = 'block';
     updateSubmit();
@@ -312,15 +337,13 @@
   }
 
   function updateSubmit() {
-    submitBtn.disabled = !(selectedFile && question.value.trim());
+    submitBtn.disabled = !selectedFile;
   }
 
   fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
   clearBtn.addEventListener('click', clearFile);
-  question.addEventListener('input', updateSubmit);
 
-  // Drag & drop
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone.addEventListener('drop', e => {
     e.preventDefault();
@@ -328,48 +351,109 @@
     setFile(e.dataTransfer.files[0]);
   });
 
-  // Ctrl/Cmd+Enter to submit
-  question.addEventListener('keydown', e => {
+  questionEl.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitBtn.click();
   });
 
+  // ── Pipeline UI helpers ───────────────────────────────────────────────────
+
+  function resetUI() {
+    AGENTS.forEach(name => {
+      document.getElementById(`panel-${name}`).classList.remove('visible');
+      document.getElementById(`body-${name}`).textContent = '';
+      setBadge(name, 'waiting');
+    });
+    nodeVision.className  = 'pipe-node';
+    nodeExplain.className = 'pipe-node';
+    statusEl.innerHTML = '';
+  }
+
+  function setBadge(agent, state) {
+    const el = document.getElementById(`badge-${agent}`);
+    el.className = `agent-badge ${state}`;
+    el.textContent = state;
+  }
+
+  function showPanel(agent) {
+    document.getElementById(`panel-${agent}`).classList.add('visible');
+  }
+
+  // ── Submission ────────────────────────────────────────────────────────────
+
   submitBtn.addEventListener('click', async () => {
-    if (!selectedFile || !question.value.trim()) return;
+    if (!selectedFile) return;
 
     submitBtn.disabled = true;
-    answerWrap.style.display = 'none';
-    answer.textContent = '';
-    status.innerHTML = '<span class="spinner"></span> Thinking…';
+    resetUI();
+    statusEl.innerHTML = '<span class="spinner"></span> Agent pipeline running…';
 
     const form = new FormData();
     form.append('image', selectedFile, selectedFile.name);
-    form.append('question', question.value.trim());
+    form.append('question', questionEl.value.trim() || 'Analyze this image thoroughly.');
 
     try {
       const resp = await fetch('/ask', { method: 'POST', body: form });
 
       if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`Server error ${resp.status}: ${text}`);
+        const txt = await resp.text();
+        throw new Error(`Server error ${resp.status}: ${txt}`);
       }
 
-      answerWrap.style.display = 'block';
-      status.textContent = '';
-
-      const reader = resp.body.getReader();
+      const reader  = resp.body.getReader();
       const decoder = new TextDecoder();
+      let buffer    = '';
+      let activeAgent = null;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        answer.textContent += decoder.decode(value, { stream: true });
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (raw === '[DONE]') {
+            // Mark last agent done
+            if (activeAgent) {
+              setBadge(activeAgent, 'done');
+              if (activeAgent === 'VisionAnalyzer')  nodeVision.className  = 'pipe-node done';
+              if (activeAgent === 'ExplainerSuggester') nodeExplain.className = 'pipe-node done';
+            }
+            statusEl.textContent = 'Done.';
+            break;
+          }
+
+          let event;
+          try { event = JSON.parse(raw); } catch { continue; }
+
+          const { agent, text } = event;
+          if (!agent || !text) continue;
+
+          // Detect agent switch
+          if (agent !== activeAgent) {
+            if (activeAgent) {
+              setBadge(activeAgent, 'done');
+              if (activeAgent === 'VisionAnalyzer')  nodeVision.className  = 'pipe-node done';
+              if (activeAgent === 'ExplainerSuggester') nodeExplain.className = 'pipe-node done';
+            }
+            activeAgent = agent;
+            showPanel(agent);
+            setBadge(agent, 'running');
+            if (agent === 'VisionAnalyzer')      nodeVision.className  = 'pipe-node active';
+            if (agent === 'ExplainerSuggester')  nodeExplain.className = 'pipe-node active';
+          }
+
+          document.getElementById(`body-${agent}`).textContent += text;
+        }
       }
 
-      status.textContent = 'Done.';
     } catch (err) {
-      status.textContent = '⚠ ' + err.message;
+      statusEl.textContent = '⚠ ' + err.message;
     } finally {
-      submitBtn.disabled = !(selectedFile && question.value.trim());
+      submitBtn.disabled = false;
     }
   });
 </script>
