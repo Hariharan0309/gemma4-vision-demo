@@ -15,7 +15,7 @@ set -euo pipefail
 PROJECT_ID="valued-mediator-461216-k7"
 REGION="us-central1"
 GCS_BUCKET="${PROJECT_ID}-gemma4-models"
-HF_TOKEN="${HF_TOKEN:?Set HF_TOKEN env var before running: export HF_TOKEN=hf_...}"   # ← only thing you need to fill in
+HF_TOKEN="hugging face access token"   # ← only thing you need to fill in
 
 MODEL_ID="google/gemma-4-E2B-it"
 MODEL_DIR="gemma-4-E2B-it"
