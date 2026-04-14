@@ -6,9 +6,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py index.html ./
+COPY agent/ ./agent/
 
-# MODEL_URL and MODEL_NAME are injected at runtime via Cloud Run env vars
-ENV MODEL_URL=http://localhost:11434/v1
+# Defaults for local use — overridden by Cloud Run env vars at deploy time
+ENV OPENAI_API_BASE=http://localhost:11434/v1
+ENV OPENAI_API_KEY=ollama
 ENV MODEL_NAME=gemma4:e2b
 
 EXPOSE 8080
